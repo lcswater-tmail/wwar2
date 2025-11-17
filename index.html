@@ -1,0 +1,498 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>第二次世界大戰：關鍵配對</title>
+    <!-- 引入 Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- 引入 Google Fonts - Special Elite (標題) 和 Inter (內文) -->
+    <link href="https://fonts.googleapis.com/css2?family=Special+Elite&family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+    
+    <style>
+        /* * 自訂 CSS 區域
+         * 這裡我們定義了遊戲的主題風格、字體和動畫
+         */
+
+        /* 引入 'Special Elite' 打字機字體 和 'Inter' 內文字體 */
+        @import url('https://fonts.googleapis.com/css2?family=Special+Elite&family=Inter:wght@400;600;700&display=swap');
+
+        /* 定義二戰主題的色票 */
+        :root {
+            --color-bg-olive: #5F6F52; /* 軍綠色背景 */
+            --color-bg-parchment: #FEFBF3; /* 羊皮紙色卡片背景 */
+            --color-text-dark: #3A3A3A; /* 深灰文字 (類墨水色) */
+            --color-border: #8D8D8D; /* 邊框色 */
+            --color-accent-red: #B22222; /* 強調紅 (用於按鈕或錯誤) */
+            --color-correct-glow: #38A169; /* 正確的綠色 */
+            --color-incorrect-glow: #E53E3E; /* 錯誤的紅色 */
+        }
+
+        /* 使用 Inter 作為預設字體，背景為軍綠色 */
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: var(--color-bg-olive);
+            background-image: url('https://www.transparenttextures.com/patterns/lined-paper.png'); /* 加上細微的紋理 */
+            color: var(--color-text-dark);
+        }
+
+        /* 標題使用 'Special Elite' 打字機字體 */
+        .font-title {
+            font-family: 'Special Elite', monospace;
+        }
+
+        /* 遊戲主容器，模擬一份機密檔案 */
+        .game-container {
+            background-color: var(--color-bg-parchment);
+            border: 4px solid var(--color-text-dark);
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.5);
+            border-radius: 8px;
+        }
+
+        /* 拖曳卡片 (題目) */
+        .draggable-card {
+            background-color: #ffffff;
+            border: 2px solid var(--color-border);
+            cursor: grab;
+            transition: all 0.2s ease-in-out;
+            padding: 12px;
+            border-radius: 4px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+        .draggable-card:hover {
+            transform: scale(1.03);
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+        }
+
+        /* 放置區域 (答案) */
+        .drop-zone {
+            background-color: #F7FAFC; /* 輕微的灰色背景 */
+            border: 2px dashed var(--color-border);
+            transition: all 0.2s ease-in-out;
+            border-radius: 4px;
+            padding: 12px;
+        }
+        
+        /* 當卡片被拖曳到上方時的樣式 */
+        .drag-over {
+            background-color: #EBF8FF; /* 淺藍色 */
+            border-color: #4299E1;
+        }
+
+        /* * 互動與反饋動畫
+         */
+
+        /* 1. 拖曳中的卡片樣式 */
+        .dragging {
+            opacity: 0.5;
+            transform: rotate(3deg);
+            box-shadow: 0 10px 20px rgba(0, 0, 0, 0.3);
+        }
+
+        /* 2. 點擊/輕觸選中的卡片樣式 (行動裝置) */
+        .selected {
+            transform: scale(1.05);
+            box-shadow: 0 0 15px rgba(59, 130, 246, 0.5); /* 藍色光暈 */
+            border: 2px solid #3B82F6 !important;
+        }
+
+        /* 3. 配對正確的樣式 */
+        .correct {
+            background-color: #F0FFF4; /* 淺綠色 */
+            border: 2px solid var(--color-correct-glow);
+            color: #2F855A;
+            cursor: not-allowed;
+            opacity: 0.8;
+        }
+        /* 正確的動畫 */
+        @keyframes pulse {
+            0%, 100% { box-shadow: 0 0 0 0 rgba(56, 161, 105, 0.4); }
+            50% { box-shadow: 0 0 0 10px rgba(56, 161, 105, 0); }
+        }
+        .correct-flash {
+            animation: pulse 0.4s ease-in-out;
+        }
+
+        /* 4. 配對錯誤的動畫 */
+        @keyframes shake {
+            0%, 100% { transform: translateX(0); }
+            25% { transform: translateX(-6px); }
+            75% { transform: translateX(6px); }
+        }
+        .incorrect-flash {
+            animation: shake 0.3s ease-in-out;
+            border-color: var(--color-incorrect-glow);
+            background-color: #FFF5F5;
+        }
+
+        /* 按鈕風格 */
+        .btn-primary {
+            font-family: 'Special Elite', monospace;
+            background-color: var(--color-accent-red);
+            color: white;
+            padding: 10px 20px;
+            font-size: 1.1rem;
+            border-radius: 4px;
+            border-bottom: 3px solid #8B0000;
+            transition: all 0.1s ease;
+        }
+        .btn-primary:hover {
+            background-color: #CB2525;
+            transform: translateY(-2px);
+            border-bottom-width: 5px;
+        }
+        .btn-primary:active {
+            transform: translateY(1px);
+            border-bottom-width: 3px;
+        }
+
+        /* 遊戲結束的彈出視窗 */
+        .modal {
+            background-color: rgba(0, 0, 0, 0.6);
+            backdrop-filter: blur(5px);
+        }
+        .modal-content {
+            background-color: var(--color-bg-parchment);
+            border: 4px solid var(--color-text-dark);
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.5);
+        }
+    </style>
+</head>
+<body class="p-4 md:p-8">
+
+    <!-- 遊戲主容器 -->
+    <div id="game-container" class="game-container max-w-7xl mx-auto p-6 md:p-10 rounded-lg">
+
+        <!-- 1. 頂部：標題和計分板 -->
+        <header class="flex flex-col md:flex-row justify-between items-center pb-6 border-b-2 border-dashed border-gray-400">
+            <div>
+                <h1 class="font-title text-3xl md:text-5xl text-center md:text-left">CLASSIFIED</h1>
+                <h2 class="font-title text-xl md:text-2xl text-center md:text-left">WWII: 關鍵配對任務</h2>
+            </div>
+            <div class="flex flex-col items-center mt-4 md:mt-0">
+                <div class="font-title text-2xl">SCORE</div>
+                <div id="score" class="font-title text-5xl font-bold" style="color: var(--color-accent-red);">0</div>
+            </div>
+        </header>
+
+        <!-- 2. 遊戲主區域 -->
+        <main id="game-board" class="mt-6">
+            <!-- 響應式佈局：在 md (平板) 以上為兩欄，以下為單欄 -->
+            <div class="flex flex-col md:flex-row gap-8">
+                
+                <!-- 左欄：可拖曳的卡片 (題目) -->
+                <div class="w-full md:w-2/5">
+                    <h3 class="font-title text-2xl mb-4 border-b-2 border-gray-300 pb-2">機密代號 (拖曳此處)</h3>
+                    <div id="draggable-container" class="space-y-4">
+                        <!-- 遊戲卡片將由 JS 動態生成於此 -->
+                    </div>
+                </div>
+
+                <!-- 右欄：放置區域 (答案) -->
+                <div class="w-full md:w-3/5">
+                    <h3 class="font-title text-2xl mb-4 border-b-2 border-gray-300 pb-2">檔案解密 (放置於此)</h3>
+                    <div id="droppable-container" class="space-y-4">
+                        <!-- 答案區域將由 JS 動態生成於此 -->
+                    </div>
+                </div>
+
+            </div>
+        </main>
+
+    </div> <!-- 遊戲主容器結束 -->
+
+    <!-- 3. 遊戲結束彈出視窗 (Modal) -->
+    <div id="completion-modal" class="modal hidden fixed inset-0 z-50 flex justify-center items-center p-4">
+        <div class="modal-content w-full max-w-md p-8 rounded-lg text-center">
+            <h2 class="font-title text-4xl mb-4" style="color: var(--color-accent-red);">任務完成！</h2>
+            <p class="text-lg mb-2">做得好，指揮官！</p>
+            <p class="text-lg mb-6">您已成功解密所有檔案。</p>
+            <div class="mb-8">
+                <span class="font-title text-2xl">FINAL SCORE</span>
+                <div id="final-score" class="font-title text-6xl font-bold">0</div>
+            </div>
+            <button id="play-again-btn" class="btn-primary">
+                再玩一次 (NEW MISSION)
+            </button>
+        </div>
+    </div>
+
+
+    <!-- 
+      *********************************
+      * 遊戲腳本 (JavaScript)       *
+      *********************************
+    -->
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+
+            // --- 遊戲資料 (8 組配對) ---
+            const gameData = [
+                { id: 'p1', term: '軸心國 (Axis Powers)', description: '德國、義大利、日本組成的軍事同盟。' },
+                { id: 'p2', term: '同盟國 (Allied Powers)', description: '英國、法國、美國、蘇聯等國組成的反法西斯聯盟。' },
+                { id: 'p3', term: '閃電戰 (Blitzkrieg)', description: '德國在戰爭初期使用的一種快速、集中的軍事戰術。' },
+                { id: 'p4', term: '珍珠港事件 (Pearl Harbor)', description: '1941年日本對美國海軍基地的毀滅性突襲，導致美國參戰。' },
+                { id: 'p5', term: '諾曼第登陸 (D-Day)', description: '1944年同盟國在法國北部海岸的大規模登陸行動，開闢了西線戰場。' },
+                { id: 'p6', term: '史達林格勒戰役', description: '蘇聯戰勝德國的關鍵戰役，被認為是東線戰場的轉捩點。' },
+                { id: 'p7', term: '溫斯頓·邱吉爾', description: '戰爭期間的英國首相，以其「永不投降」的演說聞名。' },
+                { id: 'p8', term: '原子彈 (Atomic Bomb)', description: '在廣島和長崎使用，最終迫使日本投降的毀滅性新武器。' }
+            ];
+
+            // --- 遊戲狀態變數 ---
+            let score = 0;
+            let correctMatches = 0;
+            const totalPairs = gameData.length;
+            let selectedTerm = null; // 用於行動裝置點擊配對
+
+            // --- DOM 元素 ---
+            const draggableContainer = document.getElementById('draggable-container');
+            const droppableContainer = document.getElementById('droppable-container');
+            const scoreDisplay = document.getElementById('score');
+            const modal = document.getElementById('completion-modal');
+            const finalScoreDisplay = document.getElementById('final-score');
+            const playAgainButton = document.getElementById('play-again-btn');
+
+            // --- 初始化遊戲 ---
+            function initGame() {
+                // 1. 重置狀態
+                score = 0;
+                correctMatches = 0;
+                selectedTerm = null;
+                updateScore();
+                modal.classList.add('hidden');
+
+                // 2. 清空容器
+                draggableContainer.innerHTML = '';
+                droppableContainer.innerHTML = '';
+
+                // 3. 隨機排序
+                // 我們分別隨機排序「題目」和「答案」，這樣每次玩的順序都不同
+                const shuffledTerms = [...gameData].sort(() => Math.random() - 0.5);
+                const shuffledDescriptions = [...gameData].sort(() => Math.random() - 0.5);
+
+                // 4. 生成卡片和放置區
+                shuffledTerms.forEach(item => {
+                    createDraggableCard(item.id, item.term);
+                });
+
+                shuffledDescriptions.forEach(item => {
+                    createDropZone(item.id, item.description);
+                });
+
+                // 5. 重新綁定所有事件
+                addEventListeners();
+            }
+
+            // --- 創建可拖曳的卡片 (題目) ---
+            function createDraggableCard(id, term) {
+                const card = document.createElement('div');
+                card.id = `term-${id}`;
+                card.className = 'draggable-card';
+                card.draggable = true;
+                card.dataset.id = id;
+                card.innerHTML = `<span class="font-bold">${term}</span>`;
+                draggableContainer.appendChild(card);
+            }
+
+            // --- 創建放置區域 (答案) ---
+            function createDropZone(id, description) {
+                const zone = document.createElement('div');
+                zone.id = `desc-${id}`;
+                zone.className = 'drop-zone';
+                zone.dataset.id = id;
+                zone.innerHTML = `<p>${description}</p>`;
+                droppableContainer.appendChild(zone);
+            }
+
+            // --- 綁定所有事件監聽器 ---
+            function addEventListeners() {
+                const draggables = document.querySelectorAll('.draggable-card');
+                const droppables = document.querySelectorAll('.drop-zone');
+
+                // 1. 拖曳事件 (Drag & Drop API)
+                draggables.forEach(card => {
+                    card.addEventListener('dragstart', handleDragStart);
+                    card.addEventListener('dragend', handleDragEnd);
+                });
+
+                droppables.forEach(zone => {
+                    zone.addEventListener('dragover', handleDragOver);
+                    zone.addEventListener('dragleave', handleDragLeave);
+                    zone.addEventListener('drop', handleDrop);
+                });
+
+                // 2. 點擊/輕觸事件 (行動裝置支援)
+                draggables.forEach(card => {
+                    card.addEventListener('click', handleTermClick);
+                });
+
+                droppables.forEach(zone => {
+                    zone.addEventListener('click', handleDescriptionClick);
+                });
+
+                // 3. 再玩一次按鈕
+                playAgainButton.addEventListener('click', initGame);
+            }
+
+            // --- 事件處理：拖曳 (Drag & Drop) ---
+
+            function handleDragStart(e) {
+                // 如果卡片已經配對，則不能拖曳
+                if (e.target.classList.contains('correct')) return;
+
+                e.dataTransfer.setData('text/plain', e.target.dataset.id);
+                // 為了觸覺反饋，增加一個CSS class
+                setTimeout(() => e.target.classList.add('dragging'), 0);
+            }
+
+            function handleDragEnd(e) {
+                e.target.classList.remove('dragging');
+            }
+
+            function handleDragOver(e) {
+                e.preventDefault(); // 必須阻止預設行為才能觸發 drop
+                const zone = e.currentTarget;
+                if (!zone.classList.contains('correct')) {
+                    zone.classList.add('drag-over');
+                }
+            }
+
+            function handleDragLeave(e) {
+                e.currentTarget.classList.remove('drag-over');
+            }
+
+            function handleDrop(e) {
+                e.preventDefault();
+                const dropZone = e.currentTarget;
+                dropZone.classList.remove('drag-over');
+
+                // 如果放置區已經配對成功，則不執行任何操作
+                if (dropZone.classList.contains('correct')) return;
+
+                const draggedId = e.dataTransfer.getData('text/plain');
+                const dropZoneId = dropZone.dataset.id;
+                const draggedElement = document.getElementById(`term-${draggedId}`);
+
+                // 檢查配對
+                if (draggedId === dropZoneId) {
+                    handleCorrectMatch(draggedElement, dropZone);
+                } else {
+                    handleIncorrectMatch(dropZone);
+                }
+            }
+
+            // --- 事件處理：點擊 (Click/Tap) ---
+
+            function handleTermClick(e) {
+                const clickedCard = e.currentTarget;
+
+                // 如果點擊的卡片已經配對，則不動作
+                if (clickedCard.classList.contains('correct')) return;
+
+                if (selectedTerm === clickedCard) {
+                    // 如果再次點擊已選中的卡片，則取消選中
+                    selectedTerm.classList.remove('selected');
+                    selectedTerm = null;
+                } else {
+                    // 移除之前選中的
+                    if (selectedTerm) {
+                        selectedTerm.classList.remove('selected');
+                    }
+                    // 選中新的
+                    selectedTerm = clickedCard;
+                    selectedTerm.classList.add('selected');
+                }
+            }
+
+            function handleDescriptionClick(e) {
+                const clickedZone = e.currentTarget;
+
+                // 如果沒有選中任何題目卡，或者點擊的答案區已配對，則不動作
+                if (!selectedTerm || clickedZone.classList.contains('correct')) return;
+
+                const termId = selectedTerm.dataset.id;
+                const zoneId = clickedZone.dataset.id;
+
+                // 檢查配對
+                if (termId === zoneId) {
+                    handleCorrectMatch(selectedTerm, clickedZone);
+                    selectedTerm = null; // 配對成功後清除選中
+                } else {
+                    handleIncorrectMatch(clickedZone);
+                    // 配對錯誤，取消選中
+                    if (selectedTerm) {
+                        selectedTerm.classList.remove('selected');
+                        selectedTerm = null;
+                    }
+                }
+            }
+
+            // --- 遊戲邏輯：配對處理 ---
+
+            function handleCorrectMatch(termElement, zoneElement) {
+                console.log('Correct Match!');
+                score += 100;
+                correctMatches++;
+                updateScore();
+
+                // 1. 樣式變更 (題目卡)
+                termElement.classList.add('correct');
+                termElement.classList.remove('draggable-card'); // 移除樣式
+                termElement.draggable = false;
+                termElement.style.opacity = '0.5'; // 變淡
+                termElement.style.cursor = 'not-allowed';
+
+                // 2. 樣式變更 (答案區)
+                // 我們將題目的內容移到答案區，使其合而為一
+                const termText = termElement.querySelector('.font-bold').innerText;
+                const descText = zoneElement.querySelector('p').innerText;
+                zoneElement.innerHTML = `<span class="font-bold">${termText}</span><p class="text-sm mt-1">${descText}</p>`;
+                
+                zoneElement.classList.add('correct');
+                zoneElement.classList.remove('drop-zone'); // 移除樣式
+                
+                // 3. 觸發反饋動畫
+                flashFeedback(zoneElement, 'correct-flash');
+
+                // 4. 檢查遊戲是否結束
+                if (correctMatches === totalPairs) {
+                    showCompletionModal();
+                }
+            }
+
+            function handleIncorrectMatch(element) {
+                console.log('Incorrect Match.');
+                score = Math.max(0, score - 10); // 分數最低為 0
+                updateScore();
+                
+                // 觸發反饋動畫 (晃動)
+                flashFeedback(element, 'incorrect-flash');
+            }
+
+            // --- UI 更新 ---
+
+            function updateScore() {
+                scoreDisplay.textContent = score;
+            }
+
+            function showCompletionModal() {
+                finalScoreDisplay.textContent = score;
+                modal.classList.remove('hidden');
+            }
+
+            // --- 輔助函式：動畫反饋 ---
+            function flashFeedback(element, className) {
+                element.classList.add(className);
+                setTimeout(() => {
+                    element.classList.remove(className);
+                }, 400); // 動畫持續時間
+            }
+
+            // --- 遊戲開始 ---
+            initGame();
+
+        });
+    </script>
+
+</body>
+</html>
